@@ -1,11 +1,14 @@
+`include "controller.v"
+`include "datapath.v"
+
 module riscv(input clk, reset,
                  output [31:0] pc,
                  input [31:0] instr,
                  output memwrite,
                  output [31:0] aluout, writedata,
                  input [31:0] readdata);
-    logic memtoreg, alusrc, regdst, regwrite, jump, pcsrc, zero;
-    logic [2:0] alucontrol;
+    wire memtoreg, alusrc, regdst, regwrite, jump, pcsrc, zero;
+    wire [2:0] alucontrol;
 
     controller c(instr[31:26], instr[5:0], zero,
                  memtoreg, memwrite, pcsrc,

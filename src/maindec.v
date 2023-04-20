@@ -7,7 +7,7 @@ module maindec(input  [5:0] op,
     logic [8:0] controls;
     assign {regwrite, regdst, alusrc, branch, memwrite,
             memtoreg, jump, aluop} = controls;
-    always_comb
+    always @(op) begin
         case(op)
             6'b000000:
                 controls <= 9'b110000010; // RTYPE
@@ -24,4 +24,5 @@ module maindec(input  [5:0] op,
             default:
                 controls <= 9'bxxxxxxxxx; // illegal op
         endcase
-    endmodule
+    end
+endmodule
