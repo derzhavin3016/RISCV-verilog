@@ -4,7 +4,7 @@ module alu(
         output reg [31:0] aluout,
         output reg zero
     );
-    always @(*) begin
+    always_latch begin
         case (aluctr)
             3'b010:
                 aluout = a + b;

@@ -1,7 +1,3 @@
-`include "mips.v"
-`include "imem.v"
-`include "dmem.v"
-
 module top (input clk, reset,
                 output [31:0] writedata, dataadr,
                 output memwrite

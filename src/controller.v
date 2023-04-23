@@ -1,6 +1,3 @@
-`include "maindec.v"
-`include "aludec.v"
-
 module controller (input [5:0] op, funct,
                        input zero,
                        output memtoreg, memwrite,

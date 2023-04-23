@@ -1,6 +1,3 @@
-`include "controller.v"
-`include "datapath.v"
-
 module mips (input clk, reset,
                  output [31:0] pc,
                  input [31:0] instr,
@@ -9,6 +6,7 @@ module mips (input clk, reset,
                  input [31:0] readdata
                 );
     wire memtoreg, branch, alusrc, regdst, regwrite, jump;
+    logic pcsrc, zero;
     wire [2:0] alucontrol;
     controller c(instr[31:26], instr[5:0], zero,
                  memtoreg, memwrite, pcsrc,

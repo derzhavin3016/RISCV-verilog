@@ -1,11 +1,3 @@
-`include "flopr.v"
-`include "adder.v"
-`include "mux2.v"
-`include "alu.v"
-`include "sext.v"
-`include "sl2.v"
-`include "regfile.v"
-
 module datapath (input clk, reset,
                      input memtoreg, pcsrc,
                      input alusrc, regdst,
