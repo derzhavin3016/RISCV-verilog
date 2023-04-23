@@ -13,3 +13,11 @@ verilate(
   # -Wall
   --trace
   --exe)
+
+target_link_libraries(sim PRIVATE elfio::elfio)
+target_include_directories(sim SYSTEM
+                           PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/ELFIO/)
+
+target_link_libraries(sim PRIVATE CLI11::CLI11)
+target_include_directories(sim SYSTEM
+                           PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/CLI11/include)
