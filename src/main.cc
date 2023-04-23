@@ -1,5 +1,3 @@
-#include <CLI/App.hpp>
-#include <CLI/Validators.hpp>
 #include <algorithm>
 #include <array>
 #include <filesystem>
@@ -24,7 +22,7 @@ private:
   ELFIO::elfio elfFile_{};
 
 public:
-  ELFLoader(const std::filesystem::path &file)
+  explicit ELFLoader(const std::filesystem::path &file)
   {
     if (!elfFile_.load(file))
       throw std::runtime_error{"Failed while loading input file: " +
@@ -81,22 +79,74 @@ private:
   }
 };
 
-int main(int argc, char *argv[])
+int parseCmd(int argc, char *argv[], std::filesystem::path &elf_path)
 {
-  constexpr vluint64_t END_TIME = 300;
-
   // Parse cmd args
   CLI::App app{"Verilator based riscv simulator"};
-  std::filesystem::path elf_path{};
   app.add_option("elf_file", elf_path, "Path to elf file")
     ->required()
     ->check(CLI::ExistingFile);
 
   CLI11_PARSE(app, argc, argv);
+  return 0;
+}
 
+void loadElfToMem(const std::filesystem::path &elf_path, Vtop *top)
+{
+  ELFLoader loader{elf_path};
+  top->top->pc = loader.getEntryPoint();
+
+  for (auto segmentIdx : loader.getLoadableSegments())
+  {
+    auto segPtr = loader.getSegmentPtr(segmentIdx);
+    auto fileSize = segPtr->get_file_size();
+
+    auto vAddr = segPtr->get_virtual_address();
+
+    auto beg = reinterpret_cast<const std::uint8_t *>(segPtr->get_data());
+    auto dst = reinterpret_cast<std::uint8_t *>(top->top->imem->RAM.data());
+
+    std::copy_n(beg, fileSize, dst + vAddr);
+  }
+}
+
+class VCDTracer final
+{
+private:
+  std::unique_ptr<VerilatedVcdC> vcd{};
+
+public:
+  VCDTracer(Vtop *top, const std::filesystem::path &trace_file, int levels = 99)
+    : vcd(std::make_unique<decltype(vcd)::element_type>())
+  {
+    top->trace(vcd.get(), levels);
+    vcd->open(trace_file.c_str());
+  }
+  ~VCDTracer()
+  {
+    vcd->close();
+  }
+};
+
+int main(int argc, char *argv[])
+try
+{
+  constexpr vluint64_t END_TIME = 300;
+
+  std::filesystem::path elf_path{};
+  if (int res = parseCmd(argc, argv, elf_path); !res)
+    return res;
+
+  // Verilator init
   Verilated::commandArgs(argc, argv);
-
   auto top = std::make_unique<Vtop>();
+
+  // enable vcd dump
+  Verilated::traceEverOn(true);
+  VCDTracer tracer(top.get(), "out.vcd");
+
+  // Loading elf
+  loadElfToMem(elf_path, top.get());
 
   int clock = 0;
   for (vluint64_t vtime = 1; !Verilated::gotFinish() && vtime <= END_TIME;
@@ -109,4 +159,9 @@ int main(int argc, char *argv[])
   }
 
   top->final();
+}
+catch (std::runtime_error &err)
+{
+  std::cerr << err.what() << std::endl;
+  return 1;
 }
