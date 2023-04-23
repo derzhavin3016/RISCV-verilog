@@ -1,7 +1,7 @@
 module alu(
         input [31:0] a, b,
         input [2:0] aluctr,
-        output reg [31:0] out,
+        output reg [31:0] aluout,
         output reg zero
     );
     always @(*) begin
@@ -19,6 +19,6 @@ module alu(
             default:
                 ;
         endcase
-        zero = (out == 0);
+        zero = (aluout == 0);
     end
 endmodule

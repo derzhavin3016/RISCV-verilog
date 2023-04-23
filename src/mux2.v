@@ -1,6 +1,7 @@
-module mux2 #(parameter WIDTH = 8)
-    (input logic [WIDTH-1:0] d0, d1,
-     input logic s,
-     output wire [WIDTH-1:0] y);
+module mux2 # (parameter WIDTH = 8)
+    (input [WIDTH-1:0] d0, d1,
+     input s,
+     output [WIDTH-1:0] y
+    );
     assign y = s ? d1 : d0;
 endmodule
