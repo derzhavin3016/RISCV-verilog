@@ -1,10 +1,10 @@
-module mips (input clk, reset,
-                 output [31:0] pc,
-                 input [31:0] instr,
-                 output memwrite,
-                 output [31:0] aluout, writedata,
-                 input [31:0] readdata
-                );
+module riscv (input clk, reset,
+                  output [31:0] pc,
+                  input [31:0] instr,
+                  output memwrite,
+                  output [31:0] aluout, writedata,
+                  input [31:0] readdata
+                 );
     wire memtoreg, branch, alusrc, regdst, regwrite, jump;
     logic pcsrc, zero;
     wire [2:0] alucontrol;
