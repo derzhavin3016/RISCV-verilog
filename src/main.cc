@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <filesystem>
 #include <memory>
 #include <vector>
@@ -15,6 +16,9 @@
 
 using Addr = std::uint32_t;
 using Word = std::uint32_t;
+
+template <typename T>
+concept Number = std::integral<T> || std::floating_point<T>;
 
 class ELFLoader final
 {
@@ -122,6 +126,11 @@ public:
     top->trace(vcd.get(), levels);
     vcd->open(trace_file.c_str());
   }
+  template <Number NumT>
+  void dump(NumT val)
+  {
+    vcd->dump(val);
+  }
 };
 
 int main(int argc, char *argv[])
@@ -151,6 +160,7 @@ try
     if (vtime % 8 == 0)
       clock ^= 1;
     top->clk = clock;
+    tracer.dump(vtime);
     top->eval();
   }
 
