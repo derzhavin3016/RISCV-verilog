@@ -7,7 +7,7 @@ module riscv (input clk, reset,
                  );
     wire memtoreg, branch, alusrc, regdst, regwrite, jump;
     logic pcsrc, zero;
-    wire [2:0] alucontrol;
+    wire [3:0] alucontrol;
     controller c(instr[31:26], instr[5:0], zero,
                  memtoreg, memwrite, pcsrc,
                  alusrc, regdst, regwrite, jump,

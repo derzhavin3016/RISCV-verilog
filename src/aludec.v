@@ -1,27 +1,50 @@
-module aludec (input [5:0] funct,
-                   input [1:0] aluop,
-                   output reg [2:0] alucontrol
+`include "opcodes.v"
+`include "aluop.v"
+
+module aludec (input [6:0] opcode,
+                   input [2:0] funct3,
+                   input [6:0] funct7,
+                   output reg [3:0] alucontrol
                   );
-    always @(*)
-    case(aluop)
-        2'b00:
-            alucontrol = 3'b010; // add (for lw/sw/addi)
-        2'b01:
-            alucontrol = 3'b110; // sub (for beq)
-        default:
-        case(funct) // R-type instructions
-            6'b100000:
-                alucontrol = 3'b010; // add
-            6'b100010:
-                alucontrol = 3'b110; // sub
-            6'b100100:
-                alucontrol = 3'b000; // and
-            6'b100101:
-                alucontrol = 3'b001; // or
-            6'b101010:
-                alucontrol = 3'b111; // slt
+    always_latch
+        case(opcode)
+            `OPC_LUI, `OPC_AUIPC, `OPC_JAL, `OPC_JALR, `OPC_LOAD, `OPC_STORE:
+                alucontrol = `ALU_ADD;
+            `OPC_BRANCH:
+            case (funct3)
+                3'b000, 3'b001:
+                    alucontrol = `ALU_SUB; // beq, bne
+                3'b100, 3'b101:
+                    alucontrol = `ALU_SLT; // blt, bge
+                3'b110, 3'b111:
+                    alucontrol = `ALU_SLTU; // bltu, bgeu
+                default:
+                    alucontrol = 4'bxxxx;
+            endcase
+            `OPC_R_TYPE, `OPC_I_TYPE: begin
+                logic funct7_zero = (funct7 == 0);
+                case (funct3)
+                    3'b000:
+                        alucontrol = (opcode == `OPC_I_TYPE) || funct7_zero ? `ALU_ADD : `ALU_SUB;
+                    3'b001:
+                        alucontrol = `ALU_SLL;
+                    3'b010:
+                        alucontrol = `ALU_SLT;
+                    3'b011:
+                        alucontrol = `ALU_SLTU;
+                    3'b100:
+                        alucontrol = `ALU_XOR;
+                    3'b101:
+                        alucontrol = funct7_zero ? `ALU_SRL : `ALU_SRA;
+                    3'b110:
+                        alucontrol = `ALU_OR;
+                    3'b111:
+                        alucontrol = `ALU_AND;
+                    default:
+                        alucontrol = 4'bxxxx;
+                endcase
+            end
             default:
-                alucontrol = 3'bxxx; // ???
+                alucontrol = 4'bxxxx;
         endcase
-    endcase
-endmodule
+    endmodule
