@@ -122,10 +122,6 @@ public:
     top->trace(vcd.get(), levels);
     vcd->open(trace_file.c_str());
   }
-  ~VCDTracer()
-  {
-    vcd->close();
-  }
 };
 
 int main(int argc, char *argv[])
