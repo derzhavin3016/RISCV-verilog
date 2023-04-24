@@ -1,6 +1,8 @@
+`include "consts.v"
+
 module datapath (input clk, reset,
                      input memtoreg, pcsrc,
-                     input alusrc, regdst,
+                     input [1:0] alusrc,
                      input regwrite, jump,
                      input [3:0] alucontrol,
                      output zero,
@@ -16,7 +18,7 @@ module datapath (input clk, reset,
     wire [31:0] result;
     // next PC logic
     flopr #(32) pcreg(clk, reset, pcnext, pc);
-    adder pcadd1 (pc, 32'b100, pcplus4);
+    adder pcadd1 (pc, 32'd4, pcplus4);
     sl2 immsh(signimm, signimmsh);
     adder pcadd2(pcplus4, signimmsh, pcbranch);
     mux2 #(32) pcbrmux(pcplus4, pcbranch, pcsrc, pcnextbr);

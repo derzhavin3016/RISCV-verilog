@@ -5,15 +5,17 @@ module riscv (input clk, reset,
                   output [31:0] aluout, writedata,
                   input [31:0] readdata
                  );
-    wire memtoreg, branch, alusrc, regdst, regwrite, jump;
+    wire memtoreg, branch, regwrite, jump;
+    wire [2:0] memsize;
+    logic [1:0] alusrc;
     logic pcsrc, zero;
     wire [3:0] alucontrol;
-    controller c(instr[31:26], instr[5:0], zero,
-                 memtoreg, memwrite, pcsrc,
-                 alusrc, regdst, regwrite, jump,
+    controller c(instr[6:0], instr[14:12], instr[31:25], zero,
+                 memtoreg, memwrite, memsize, pcsrc,
+                 alusrc, regwrite, jump,
                  alucontrol);
     datapath dp(clk, reset, memtoreg, pcsrc,
-                alusrc, regdst, regwrite, jump,
+                alusrc, regwrite, jump,
                 alucontrol,
                 zero, pc, instr,
                 aluout, writedata, readdata);
