@@ -83,13 +83,17 @@ private:
   }
 };
 
-int parseCmd(int argc, char *argv[], std::filesystem::path &elf_path)
+int parseCmd(int argc, char *argv[], std::filesystem::path &elf_path,
+             std::filesystem::path &vcd_path)
 {
   // Parse cmd args
   CLI::App app{"Verilator based riscv simulator"};
   app.add_option("elf_file", elf_path, "Path to elf file")
     ->required()
     ->check(CLI::ExistingFile);
+
+  app.add_option("--vcd-file", vcd_path, "Path to .vcd file to dump")
+    ->default_val("out.vcd");
 
   CLI11_PARSE(app, argc, argv);
   return 0;
@@ -138,8 +142,8 @@ try
 {
   constexpr vluint64_t END_TIME = 300;
 
-  std::filesystem::path elf_path{};
-  if (int res = parseCmd(argc, argv, elf_path); res)
+  std::filesystem::path elf_path{}, vcd_path{};
+  if (int res = parseCmd(argc, argv, elf_path, vcd_path); res)
     return res;
 
   // Verilator init
@@ -148,7 +152,7 @@ try
 
   // enable vcd dump
   Verilated::traceEverOn(true);
-  VCDTracer tracer(top.get(), "out.vcd");
+  VCDTracer tracer(top.get(), vcd_path);
 
   // Loading elf
   loadElfToMem(elf_path, top.get());
