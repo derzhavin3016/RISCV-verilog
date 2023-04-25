@@ -12,11 +12,11 @@ module datapath (input clk, reset, hlt,
                      output [31:0] aluout, writedata,
                      input [31:0] readdata
                     );
-    wire [31:0] pcnext, pcnextbr, pcplus4, pcbranch, jmp_base, jmp_pc, jmp_fin_pc;
-    wire [31:0] imm;
-    wire [4:0] ra1;
-    wire [31:0] srca, srcb;
-    wire [31:0] result;
+    logic [31:0] pcnext, pcnextbr, pcplus4, pcbranch, jmp_base, jmp_pc, jmp_fin_pc;
+    logic [31:0] imm;
+    logic [4:0] ra1;
+    logic [31:0] srca, srcb;
+    logic [31:0] result;
     // next PC logic
     // register file logic
     always @(posedge clk)

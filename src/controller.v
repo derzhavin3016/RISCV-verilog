@@ -1,12 +1,14 @@
-module controller (input [6:0] op, input [2:0] funct3, input [6:0] funct7,
-                       input iszero,
-                       output memtoreg, memwrite,
-                       output [2:0] memsize,
-                       output pcsrc, output [1:0] alusrc,
-                       output regwrite,
-                       output jump,
-                       output [3:0] alucontrol,
-                       output jumpsrc, alusrc_a_zero, hlt
+module controller (input logic[6:0] op,
+                     input logic[2:0] funct3, input logic[6:0] funct7,
+                       input logic iszero,
+                       output logic memtoreg, memwrite,
+                       output logic[2:0] memsize,
+                       output logic pcsrc,
+                       output logic[1:0] alusrc,
+                       output logic regwrite,
+                       output logic jump,
+                       output logic[3:0] alucontrol,
+                       output logic jumpsrc, alusrc_a_zero, hlt
                       );
     logic branch, inv_br;
     maindec md (.op(op), .funct3(funct3),

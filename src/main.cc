@@ -140,7 +140,7 @@ public:
 int main(int argc, char *argv[])
 try
 {
-  constexpr vluint64_t END_TIME = 300;
+  constexpr vluint64_t END_TIME = 10000;
 
   std::filesystem::path elf_path{}, vcd_path{};
   if (int res = parseCmd(argc, argv, elf_path, vcd_path); res)
