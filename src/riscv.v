@@ -10,13 +10,21 @@ module riscv (input clk, reset,
     logic pcsrc, zero, alusrc_a_zero;
     logic jumpsrc, hlt;
     wire [3:0] alucontrol;
-    controller c(instr[6:0], instr[14:12], instr[31:25], zero,
-                 memtoreg, memwrite, memsize, pcsrc,
-                 alusrc, regwrite, jump,
-                 alucontrol, jumpsrc, alusrc_a_zero, hlt);
-    datapath dp(clk, reset, hlt, memtoreg, pcsrc, jumpsrc,
-                alusrc, regwrite, jump,
-                alucontrol, alusrc_a_zero,
-                zero, pc, instr,
-                aluout, writedata, readdata);
+    controller c(.op(instr[6:0]), .funct3(instr[14:12]),
+                 .funct7(instr[31:25]), .iszero(zero),
+                 .memtoreg(memtoreg), .memwrite(memwrite),
+                 .memsize(memsize), .pcsrc(pcsrc),
+                 .alusrc(alusrc), .regwrite(regwrite),
+                 .jump(jump), .alucontrol(alucontrol),
+                 .jumpsrc(jumpsrc), .alusrc_a_zero(alusrc_a_zero),
+                 .hlt(hlt));
+    datapath dp(.clk(clk), .reset(reset),
+                .hlt(hlt), .memtoreg(memtoreg),
+                .pcsrc(pcsrc), .jumpsrc(jumpsrc),
+                .alusrc(alusrc), .regwrite(regwrite),
+                .jump(jump), .alucontrol(alucontrol),
+                .alusrc_a_zero(alusrc_a_zero), .zero(zero),
+                .pc(pc), .instr(instr),
+                .aluout(aluout), .writedata(writedata),
+                .readdata(readdata));
 endmodule

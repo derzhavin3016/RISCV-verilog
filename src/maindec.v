@@ -41,19 +41,45 @@ module maindec(input [6:0] op,
                 al_src = `ALU_SRC_PC;
                 alusrc_a_zero_v = 1;
                 regwrite_v = 1;
+                memsize_v = 3'bxxx;
+                memtoreg_v = 0;
+                memwrite_v = 0;
+                branch_v = 0;
+                jump_v = 0;
+                jumpsrc_v = 0;
             end
             `OPC_LUI, `OPC_I_TYPE: begin
                 alusrc_a_zero_v = (op == `OPC_LUI);
                 al_src = `ALU_SRC_IMM;
                 regwrite_v = 1;
+                memsize_v = 3'bxxx;
+                memtoreg_v = 0;
+                memwrite_v = 0;
+                branch_v = 0;
+                jump_v = 0;
+                jumpsrc_v = 0;
             end
             `OPC_R_TYPE: begin
                 al_src = `ALU_SRC_REG;
                 regwrite_v = 1;
+                memsize_v = 3'bxxx;
+                memtoreg_v = 0;
+                memwrite_v = 0;
+                branch_v = 0;
+                jump_v = 0;
+                jumpsrc_v = 0;
+                alusrc_a_zero_v = 0;
             end
             `OPC_BRANCH: begin
                 al_src = `ALU_SRC_REG;
                 branch_v = 1;
+                memsize_v = 3'bxxx;
+                memtoreg_v = 0;
+                memwrite_v = 0;
+                regwrite_v = 0;
+                jump_v = 0;
+                jumpsrc_v = 0;
+                alusrc_a_zero_v = 0;
             end
             `OPC_JAL, `OPC_JALR: begin
                 jumpsrc_v = (op == `OPC_JALR);
@@ -61,17 +87,32 @@ module maindec(input [6:0] op,
                 alusrc_a_zero_v = 1;
                 jump_v = 1;
                 regwrite_v = 1;
+                memsize_v = 3'bxxx;
+                memtoreg_v = 0;
+                memwrite_v = 0;
+                branch_v = 0;
             end
             `OPC_LOAD: begin
                 al_src = `ALU_SRC_IMM;
                 regwrite_v = 1;
                 memtoreg_v = 1;
                 memsize_v = funct3;
+                memwrite_v = 0;
+                branch_v = 0;
+                jump_v = 0;
+                jumpsrc_v = 0;
+                alusrc_a_zero_v = 0;
             end
             `OPC_STORE: begin
                 al_src = `ALU_SRC_IMM;
                 memwrite_v = 1;
                 memsize_v = funct3;
+                memtoreg_v = 0;
+                branch_v = 0;
+                regwrite_v = 0;
+                jump_v = 0;
+                jumpsrc_v = 0;
+                alusrc_a_zero_v = 0;
             end
             `OPC_SYSTEM: begin
                 hlt_v = 1;

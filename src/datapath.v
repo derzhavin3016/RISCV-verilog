@@ -23,27 +23,34 @@ module datapath (input clk, reset, hlt,
         if (hlt)
             $finish;
 
-    flopr #(32) pcreg(clk, reset, pcnext, pc);
-    adder pcadd1(pc, 32'd4, pcplus4);
-    adder pcadd2(pc, imm, pcbranch);
+    flopr #(32) pcreg(.clk(clk), .reset(reset), .d(pcnext), .q(pc));
+    adder pcadd1(.a(pc), .b(32'd4), .y(pcplus4));
+    adder pcadd2(.a(pc), .b(imm), .y(pcbranch));
 
-    mux2 #(32) pcbrmux(pcplus4, pcbranch, pcsrc, pcnextbr);
-    mux2 #(32) jmpsrcmux(pc, srca, jumpsrc, jmp_base);
-    adder jmptar(jmp_base, imm, jmp_pc);
+    mux2 #(32) pcbrmux(.d0(pcplus4), .d1(pcbranch),
+                       .s(pcsrc), .y(pcnextbr));
+    mux2 #(32) jmpsrcmux(.d0(pc), .d1(srca),
+                         .s(jumpsrc), .y(jmp_base));
+    adder jmptar(.a(jmp_base), .b(imm), .y(jmp_pc));
     assign jmp_fin_pc = jmp_pc & ~1;
 
-    mux2 #(32) pcmux(pcnextbr, jmp_fin_pc, jump, pcnext);
+    mux2 #(32) pcmux(.d0(pcnextbr), .d1(jmp_fin_pc), .s(jump), .y(pcnext));
 
-    immSel immsel(instr, imm);
+    immSel immsel(.instr(instr), .imm(imm));
     assign ra1 = instr[19:15] & ~{5{alusrc_a_zero}};
-    regfile rf(clk, ra1,
-               instr[24:20],
-               regwrite, instr[11:7],
-               result,
-               srca, writedata);
-    mux2 #(32) resmux(aluout, readdata, memtoreg, result);
+    regfile rf(.clk(clk), .ra1(ra1),
+               .ra2(instr[24:20]),
+               .we3(regwrite), .wa3(instr[11:7]),
+               .wd3(result),
+               .rd1(srca), .rd2(writedata));
+    mux2 #(32) resmux(.d0(aluout), .d1(readdata),
+                      .s(memtoreg), .y(result));
 
     // ALU logic
-    mux4 #(32) srcbmux(writedata, imm, pcbranch, pcplus4, alusrc, srcb);
-    alu alu(srca, srcb, alucontrol, aluout, zero);
+    mux4 #(32) srcbmux(.d0(writedata), .d1(imm),
+                       .d2(pcbranch), .d3(pcplus4),
+                       .s(alusrc), .y(srcb));
+    alu alu(.a(srca), .b(srcb),
+            .aluctr(alucontrol), .aluout(aluout),
+            .iszero(zero));
 endmodule
