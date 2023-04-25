@@ -84,7 +84,7 @@ private:
 };
 
 int parseCmd(int argc, char *argv[], std::filesystem::path &elf_path,
-             std::filesystem::path &vcd_path)
+             std::filesystem::path &vcd_path, vluint64_t &end_time)
 {
   // Parse cmd args
   CLI::App app{"Verilator based riscv simulator"};
@@ -94,6 +94,9 @@ int parseCmd(int argc, char *argv[], std::filesystem::path &elf_path,
 
   app.add_option("--vcd-file", vcd_path, "Path to .vcd file to dump")
     ->default_val("out.vcd");
+
+  app.add_option("--end-time", end_time, "Set end time of simulation")
+    ->default_val(1000);
 
   CLI11_PARSE(app, argc, argv);
   return 0;
@@ -140,10 +143,10 @@ public:
 int main(int argc, char *argv[])
 try
 {
-  constexpr vluint64_t END_TIME = 10000;
+  vluint64_t end_time = 0;
 
   std::filesystem::path elf_path{}, vcd_path{};
-  if (int res = parseCmd(argc, argv, elf_path, vcd_path); res)
+  if (int res = parseCmd(argc, argv, elf_path, vcd_path, end_time); res)
     return res;
 
   // Verilator init
@@ -158,7 +161,7 @@ try
   loadElfToMem(elf_path, top.get());
 
   int clock = 0;
-  for (vluint64_t vtime = 0; !Verilated::gotFinish() && vtime <= END_TIME;
+  for (vluint64_t vtime = 0; !Verilated::gotFinish() && vtime <= end_time;
        ++vtime)
   {
     if (vtime % 8 == 0)
