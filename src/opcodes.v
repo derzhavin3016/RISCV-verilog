@@ -7,3 +7,4 @@
 `define OPC_STORE 7'b0100011
 `define OPC_LUI 7'b0110111
 `define OPC_AUIPC 7'b0010111
+`define OPC_SYSTEM 7'b1110011

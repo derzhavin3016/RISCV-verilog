@@ -139,7 +139,7 @@ try
   constexpr vluint64_t END_TIME = 300;
 
   std::filesystem::path elf_path{};
-  if (int res = parseCmd(argc, argv, elf_path); !res)
+  if (int res = parseCmd(argc, argv, elf_path); res)
     return res;
 
   // Verilator init
@@ -154,14 +154,14 @@ try
   loadElfToMem(elf_path, top.get());
 
   int clock = 0;
-  for (vluint64_t vtime = 1; !Verilated::gotFinish() && vtime <= END_TIME;
+  for (vluint64_t vtime = 0; !Verilated::gotFinish() && vtime <= END_TIME;
        ++vtime)
   {
     if (vtime % 8 == 0)
       clock ^= 1;
     top->clk = clock;
-    tracer.dump(vtime);
     top->eval();
+    tracer.dump(vtime);
   }
 
   top->final();

@@ -8,10 +8,10 @@ verilate(
   sim
   SOURCES
   top.v
+  TRACE
   VERILATOR_ARGS
   -cc
-  # -Wall
-  --trace
+  -Wall
   --exe)
 
 target_link_libraries(sim PRIVATE elfio::elfio)

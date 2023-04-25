@@ -4,16 +4,20 @@
 module aludec (input [6:0] opcode,
                    input [2:0] funct3,
                    input [6:0] funct7,
-                   output reg [3:0] alucontrol
+                   output reg [3:0] alucontrol,
+                   output inv_br
                   );
+    assign inv_br = funct3[0];
     always_latch
         case(opcode)
-            `OPC_LUI, `OPC_AUIPC, `OPC_JAL, `OPC_JALR, `OPC_LOAD, `OPC_STORE:
+            `OPC_LUI, `OPC_AUIPC, `OPC_JAL, `OPC_JALR, `OPC_LOAD, `OPC_STORE, `OPC_SYSTEM:
                 alucontrol = `ALU_ADD;
             `OPC_BRANCH:
             case (funct3)
-                3'b000, 3'b001:
+                3'b000, 3'b001: begin
+                    inv_br = funct3 == 3'b001;
                     alucontrol = `ALU_SUB; // beq, bne
+                end
                 3'b100, 3'b101:
                     alucontrol = `ALU_SLT; // blt, bge
                 3'b110, 3'b111:
