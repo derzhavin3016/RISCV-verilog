@@ -2,7 +2,7 @@
 
 module datapath (input clk, reset, hlt,
                      input memtoreg, pcsrc, jumpsrc,
-                     input [1:0] alusrc,
+                     input [1:0] alusrcA, alusrcB,
                      input regwrite, jump,
                      input [3:0] alucontrol,
                      input alusrc_a_zero,
@@ -15,6 +15,7 @@ module datapath (input clk, reset, hlt,
     logic [31:0] pcnext, pcnextbr, pcplus4, pcbranch, jmp_base, jmp_pc, jmp_fin_pc;
     logic [31:0] imm;
     logic [4:0] ra1;
+    logic [31:0] rd1;
     logic [31:0] srca, srcb;
     logic [31:0] result;
     // next PC logic
@@ -29,7 +30,7 @@ module datapath (input clk, reset, hlt,
 
     mux2 #(32) pcbrmux(.d0(pcplus4), .d1(pcbranch),
                        .s(pcsrc), .y(pcnextbr));
-    mux2 #(32) jmpsrcmux(.d0(pc), .d1(srca),
+    mux2 #(32) jmpsrcmux(.d0(pc), .d1(rd1),
                          .s(jumpsrc), .y(jmp_base));
     adder jmptar(.a(jmp_base), .b(imm), .y(jmp_pc));
     assign jmp_fin_pc = jmp_pc & ~1;
@@ -42,15 +43,21 @@ module datapath (input clk, reset, hlt,
                .ra2(instr[24:20]),
                .we3(regwrite), .wa3(instr[11:7]),
                .wd3(result),
-               .rd1(srca), .rd2(writedata));
+               .rd1(rd1), .rd2(writedata));
     mux2 #(32) resmux(.d0(aluout), .d1(readdata),
                       .s(memtoreg), .y(result));
 
     // ALU logic
-    mux4 #(32) srcbmux(.d0(writedata), .d1(imm),
-                       .d2(pcbranch), .d3(pcplus4),
-                       .s(alusrc), .y(srcb));
+    mux2 #(32) srcamux(.d0(rd1), .d1(pc),
+                       .s(alusrcA[0]), .y(srca));
+    mux3 #(32) srcbmux(.d0(writedata), .d1(imm),
+                       .d2(32'd4),
+                       .s(alusrcB), .y(srcb));
     alu alu(.a(srca), .b(srcb),
             .aluctr(alucontrol), .aluout(aluout),
             .iszero(zero));
+
+    wire _unused_ok = &{1'b0,
+                        alusrcA,
+                        1'b0};
 endmodule
