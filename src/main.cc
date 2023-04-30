@@ -1,9 +1,9 @@
 #include <algorithm>
-#include <array>
 #include <concepts>
 #include <filesystem>
+#include <iterator>
 #include <memory>
-#include <vector>
+#include <ranges>
 
 #include <CLI/CLI.hpp>
 #include <elfio/elfio.hpp>
@@ -43,11 +43,13 @@ public:
   using IndexT = unsigned;
   auto getLoadableSegments() const
   {
-    std::vector<IndexT> res{};
-    for (auto &&segment : elfFile_.segments)
-      if (ELFIO::PT_LOAD == segment->get_type())
-        res.push_back(segment->get_index());
-    return res;
+    auto loadable = [](const auto &seg) {
+      return ELFIO::PT_LOAD == seg->get_type();
+    };
+    auto get_idx = [](const auto &seg) { return seg->get_index(); };
+
+    return elfFile_.segments | std::views::filter(loadable) |
+           std::views::transform(get_idx);
   }
 
   auto getSegmentPtr(IndexT index) const
