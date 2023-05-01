@@ -8,11 +8,10 @@ module rPipe #(parameter WIDTH = 32) (
     reg [(WIDTH - 1):0] savedData;
     assign outData = savedData;
 
-    always @(posedge clk) begin
+    always @(posedge clk)
         if (clr)
             savedData <= 0;
         else if (en)
             savedData <= inpData;
-    end
 
 endmodule

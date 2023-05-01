@@ -10,57 +10,139 @@ module datapath (input clk, reset, hltD,
                      input [31:0] instrF,
                      output [31:0] aluoutM, writedataM,
                      input [31:0] readdataM,
-                     output memwriteD, memwriteM,
-                     input [2:0] memsizeD, memsizeM,
+                     input memwriteD,
+                     output memwriteM,
+                     input [2:0] memsizeD,
+                     output [2:0] memsizeM,
                      input branchD, inv_brD,
                      output [31:0] instrD
                     );
-    logic [31:0] pcnext, pcnextbr, pcplus4, pcbranch, jmp_base, jmp_pc, jmp_fin_pc;
-    logic [31:0] imm;
-    logic [4:0] ra1;
-    logic [31:0] rd1;
-    logic [31:0] srca, srcb;
-    logic [31:0] result;
-    // next PC logic
-    // register file logic
+    logic hltW, jumpE, regwriteW;
+    logic [4:0] rdW;
+    logic [31:0] jmp_fin_pcE, resultW;
+    logic stallF, stallD, flushD, flushE;
+    logic [1:0] forwardAE, forwardBE;
+
+    // FETCH
+    logic [31:0] pcD, pcnextF, pcplus4F, pcbranchE, pcnextbrF;
+    rPipe #(32) pcreg(.clk(clk), .en(!stallF), .clr(reset),
+                      .inpData(pcnextF), .outData(pcF));
+    adder pcadd1(.a(pcF), .b(32'd4), .y(pcplus4F));
+
+    logic pcsrcE;
+    mux2 #(32) pcbrmux(.d0(pcplus4F), .d1(pcbranchE),
+                       .s(pcsrcE), .y(pcnextbrF));
+
+    mux2 #(32) pcmux(.d0(pcnextbrF), .d1(jmp_fin_pcE), .s(jumpE), .y(pcnextF));
+
+    rPipe #(64) FtoD(.clk(clk), .en(!stallD), .clr(flushD),
+                     .inpData({instrF, pcF}),
+                     .outData({instrD, pcD}));
+
+    // DECODE
+    logic [31:0] immD, rd1D, rd2D;
+    logic [4:0] ra1D, ra2D, rdD;
+    logic hltE, memtoregE, jumpsrcE, regwriteE,
+          memwriteE, branchE, inv_brE;
+    logic [1:0] alusrcAE, alusrcBE;
+    logic [2:0] memsizeE;
+    logic [3:0] alucontrolE;
+    logic [4:0] ra1E, ra2E, rdE;
+    logic [31:0] pcE, rd1E, rd2E, immE;
+
+    immSel immsel(.instr(instrD), .imm(immD));
+
+    assign rdD = instrD[11:7];
+    assign ra1D = instrD[19:15] & ~{5{alusrc_a_zeroD}};
+    assign ra2D = instrD[24:20];
+
+
+    regfile rf(.clk(clk), .ra1(ra1D),
+               .ra2(ra2D),
+               .we3(regwriteW), .wa3(rdW),
+               .wd3(resultW),
+               .rd1(rd1D), .rd2(rd2D));
+    rPipe #(162) DtoE(.clk(clk), .en(1), .clr(flushE),
+                      .inpData({hltD, memtoregD, jumpsrcD, alusrcAD, alusrcBD,
+                                regwriteD, jumpD, alucontrolD, pcD, memwriteD,
+                                memsizeD, branchD, inv_brD, rd1D, rd2D, ra1D, ra2D, rdD,
+                                immD}),
+                      .outData({hltE, memtoregE, jumpsrcE, alusrcAE, alusrcBE,
+                                regwriteE, jumpE, alucontrolE, pcE, memwriteE,
+                                memsizeE, branchE, inv_brE, rd1E, rd2E, ra1E, ra2E, rdE,
+                                immE}));
+
+    // EXECUTE
+    logic [31:0] srcAE, srcBE, aluoutE, rd1Efrw, rd2Efrw;
+    logic zeroE;
+    logic controlChange;
+    assign pcsrcE = branchE & (zeroE ^ inv_brE);
+    assign controlChange = pcsrcE | jumpE;
+
+    mux3 #(32) forwardAmux(.d0(rd1E), .d1(resultW), .d2(aluoutM),
+                           .s(forwardAE), .y(rd1Efrw));
+
+    mux3 #(32) forwardBmux(.d0(rd2E), .d1(resultW), .d2(aluoutM),
+                           .s(forwardBE), .y(rd2Efrw));
+
+
+    mux2 #(32) srcamux(.d0(rd1Efrw), .d1(pcE),
+                       .s(alusrcAE[0]), .y(srcAE));
+
+    mux3 #(32) srcbmux(.d0(rd2Efrw), .d1(immE),
+                       .d2(32'd4),
+                       .s(alusrcBE), .y(srcBE));
+
+    alu alu(.a(srcAE), .b(srcBE),
+            .aluctr(alucontrolE), .aluout(aluoutE),
+            .iszero(zeroE));
+
+    logic [31:0] jmp_baseE, jmp_pcE;
+    adder pcaddimm(.a(pcE), .b(immE), .y(pcbranchE));
+    mux2 #(32) jmpsrcmux(.d0(pcE), .d1(rd1E),
+                         .s(jumpsrcE), .y(jmp_baseE));
+    adder jmptar(.a(jmp_baseE), .b(immE), .y(jmp_pcE));
+    assign jmp_fin_pcE = jmp_pcE & ~1;
+    logic [31:0] writedataE;
+    assign writedataE = rd2E;
+
+    logic regwriteM, memtoregM, hltM;
+    logic [4:0] rdM;
+
+    rPipe #(76) EtoM(.clk(clk), .en(1), .clr(reset),
+                     .inpData({regwriteE, memtoregE, memwriteE,
+                               hltE, memsizeE, rdE, writedataE, aluoutE}),
+                     .outData({regwriteM, memtoregM, memwriteM,
+                               hltM, memsizeM, rdM, writedataM, aluoutM}));
+
+    // MEMORY
+    logic memtoregW;
+    logic [31:0] aluoutW, readdataW;
+
+    rPipe #(72) MtoW(.clk(clk), .en(1), .clr(reset),
+                     .inpData({regwriteM, memtoregM, hltM, rdM, aluoutM, readdataM}),
+                     .outData({regwriteW, memtoregW, hltW, rdW, aluoutW, readdataW}));
+
+    // WRITEBACK
+
+    mux2 #(32) resmux(.d0(aluoutW), .d1(readdataW),
+                      .s(memtoregW), .y(resultW));
+
     always @(posedge clk)
-        if (hlt)
+        if (hltW)
             $finish;
 
-    flopr #(32) pcreg(.clk(clk), .reset(reset), .d(pcnext), .q(pc));
-    adder pcadd1(.a(pc), .b(32'd4), .y(pcplus4));
-    adder pcadd2(.a(pc), .b(imm), .y(pcbranch));
+    // HAZARD UNIT
 
-    mux2 #(32) pcbrmux(.d0(pcplus4), .d1(pcbranch),
-                       .s(pcsrc), .y(pcnextbr));
-    mux2 #(32) jmpsrcmux(.d0(pc), .d1(rd1),
-                         .s(jumpsrc), .y(jmp_base));
-    adder jmptar(.a(jmp_base), .b(imm), .y(jmp_pc));
-    assign jmp_fin_pc = jmp_pc & ~1;
-
-    mux2 #(32) pcmux(.d0(pcnextbr), .d1(jmp_fin_pc), .s(jump), .y(pcnext));
-
-    immSel immsel(.instr(instr), .imm(imm));
-    assign ra1 = instr[19:15] & ~{5{alusrc_a_zero}};
-    regfile rf(.clk(clk), .ra1(ra1),
-               .ra2(instr[24:20]),
-               .we3(regwrite), .wa3(instr[11:7]),
-               .wd3(result),
-               .rd1(rd1), .rd2(writedata));
-    mux2 #(32) resmux(.d0(aluout), .d1(readdata),
-                      .s(memtoreg), .y(result));
-
-    // ALU logic
-    mux2 #(32) srcamux(.d0(rd1), .d1(pc),
-                       .s(alusrcA[0]), .y(srca));
-    mux3 #(32) srcbmux(.d0(writedata), .d1(imm),
-                       .d2(32'd4),
-                       .s(alusrcB), .y(srcb));
-    alu alu(.a(srca), .b(srcb),
-            .aluctr(alucontrol), .aluout(aluout),
-            .iszero(zero));
+    hazard hazUnit(.ra1D(ra1D), .ra2D(ra2D), .ra1E(ra1E), .ra2E(ra2E),
+                   .rdE(rdE), .rdM(rdM), .rdW(rdW),
+                   .controlChange(controlChange), .memtoregE(memtoregE),
+                   .regwriteM(regwriteM), .regwriteW(regwriteW),
+                   .stallF(stallF), .stallD(stallD), .flushD(flushD),
+                   .flushE(flushE),
+                   .forwardAE(forwardAE), .forwardBE(forwardBE));
 
     wire _unused_ok = &{1'b0,
-                        alusrcA,
+                        alusrcAE,
                         1'b0};
 endmodule

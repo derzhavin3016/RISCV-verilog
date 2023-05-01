@@ -33,4 +33,10 @@ module riscv (input logic clk, reset,
                 .memwriteD(memwriteD), .memwriteM(memwriteM),
                 .memsizeD(memsizeD), .memsizeM(memsizeM),
                 .branchD(branchD), .inv_brD(inv_brD), .instrD(instrD));
+
+
+    wire _unused_ok = &{1'b0,
+                        instrD[24:15],
+                        instrD[11:7],
+                        1'b0};
 endmodule
