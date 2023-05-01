@@ -107,7 +107,7 @@ int parseCmd(int argc, char *argv[], std::filesystem::path &elf_path,
 void loadElfToMem(const std::filesystem::path &elf_path, Vtop *top)
 {
   ELFLoader loader{elf_path};
-  top->top->pc = loader.getEntryPoint();
+  top->top->pcF = loader.getEntryPoint();
 
   for (auto segmentIdx : loader.getLoadableSegments())
   {
