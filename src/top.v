@@ -1,20 +1,19 @@
 `include "consts.v"
 
-module top (input clk, reset,
-                output [31:0] writedata, dataadr,
-                output memwrite
-               );
-    logic [31:0] pc /* verilator public */;
-    logic [31:0] instr, readdata;
-    logic [2:0] memsize;
-    // instantiate processor and memories
+module top (input clk, reset);
+    logic [31:0] pcF /* verilator public */;
+    logic [31:0] instrF, readdataM, writedataM, aluoutM;
+    logic [2:0] memsizeM;
+    logic memwriteM;
+    // Processor
     riscv riscv (.clk(clk), .reset(reset),
-                 .pc(pc), .instr(instr),
-                 .memwrite(memwrite), .memsize(memsize),
-                 .aluout(dataadr), .writedata(writedata),
-                 .readdata(readdata));
-    imem #(18) imem (.a(pc[19:2]), .rd(instr));
-    dmem #(18) dmem (.clk(clk), .we(memwrite),
-                     .memsize(memsize), .a(dataadr),
-                    .wd(writedata), .rd(readdata));
+                 .pcF(pcF), .instrF(instrF),
+                 .memwriteM(memwriteM), .memsizeM(memsizeM),
+                 .aluoutM(aluoutM), .writedataM(writedataM),
+                 .readdataM(readdataM));
+    // Memories
+    imem #(18) imem (.a(pcF[19:2]), .rd(instrF));
+    dmem #(18) dmem (.clk(clk), .we(memwriteM),
+                     .memsize(memsizeM), .a(aluoutM),
+                     .wd(writedataM), .rd(readdataM));
 endmodule

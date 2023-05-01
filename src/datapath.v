@@ -1,16 +1,19 @@
 `include "consts.v"
 
-module datapath (input clk, reset, hlt,
-                     input memtoreg, pcsrc, jumpsrc,
-                     input [1:0] alusrcA, alusrcB,
-                     input regwrite, jump,
-                     input [3:0] alucontrol,
-                     input alusrc_a_zero,
-                     output zero,
-                     output [31:0] pc,
-                     input [31:0] instr,
-                     output [31:0] aluout, writedata,
-                     input [31:0] readdata
+module datapath (input clk, reset, hltD,
+                     input memtoregD, jumpsrcD,
+                     input [1:0] alusrcAD, alusrcBD,
+                     input regwriteD, jumpD,
+                     input [3:0] alucontrolD,
+                     input alusrc_a_zeroD,
+                     output [31:0] pcF,
+                     input [31:0] instrF,
+                     output [31:0] aluoutM, writedataM,
+                     input [31:0] readdataM,
+                     output memwriteD, memwriteM,
+                     input [2:0] memsizeD, memsizeM,
+                     input branchD, inv_brD,
+                     output [31:0] instrD
                     );
     logic [31:0] pcnext, pcnextbr, pcplus4, pcbranch, jmp_base, jmp_pc, jmp_fin_pc;
     logic [31:0] imm;
