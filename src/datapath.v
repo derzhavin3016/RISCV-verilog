@@ -106,27 +106,31 @@ module datapath (input clk, reset, hltD,
     logic [31:0] writedataE;
     assign writedataE = rd2Efrw;
 
-    logic regwriteM, memtoregM, hltM;
+    logic regwriteM, memtoregM, hltM, controlChangeM;
     logic [4:0] rdM;
     logic [31:0] pcM;
 
-    rPipe #(108) EtoM(.clk(clk), .en(1), .clr(reset),
+    rPipe #(109) EtoM(.clk(clk), .en(1), .clr(reset),
                       .inpData({regwriteE, memtoregE, memwriteE,
-                                hltE, memsizeE, rdE, writedataE, aluoutE, pcE}),
+                                hltE, memsizeE, rdE, writedataE, aluoutE,
+                                pcE, controlChange}),
                       .outData({regwriteM, memtoregM, memwriteM,
-                                hltM, memsizeM, rdM, writedataM, aluoutM, pcM}));
+                                hltM, memsizeM, rdM, writedataM, aluoutM,
+                                pcM, controlChangeM}));
 
     // MEMORY
-    logic memtoregW, memwriteW, validW;
+    logic memtoregW, memwriteW, validW, controlChangeW;
     logic [31:0] aluoutW, readdataW, writedataW, pcW;
 
-    rPipe #(138) MtoW(.clk(clk), .en(1), .clr(reset),
+    rPipe #(139) MtoW(.clk(clk), .en(1), .clr(reset),
                       .inpData({regwriteM, memtoregM, hltM, rdM,
                                 aluoutM, readdataM, memwriteM,
-                                writedataM, pcM != 0, pcM}),
+                                writedataM, pcM != 0, pcM,
+                                controlChangeM}),
                       .outData({regwriteW, memtoregW, hltW, rdW,
                                 aluoutW, readdataW, memwriteW,
-                                writedataW, validW, pcW}));
+                                writedataW, validW, pcW,
+                                controlChangeW}));
 
     // WRITEBACK
 
@@ -146,7 +150,9 @@ module datapath (input clk, reset, hltD,
             else if (memwriteW)
                 $display("M[0x%h]=0x%h", aluoutW, writedataW);
 
-            $display("PC=0x%h", (pcM == 0) ? pcW + 4 : pcM);
+            $display("PC=0x%h", controlChangeW ? pcD
+                     : (pcM == 0) ? pcW + 4
+                     : pcM);
             if (hltW) begin
                 $display("");
                 $display("Caught halt signal at WB stage. Exiting...");
