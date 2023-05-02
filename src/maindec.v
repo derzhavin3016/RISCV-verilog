@@ -96,7 +96,7 @@ module maindec(input logic[6:0] op,
                 alusrc_a_zero = 0;
             end
             default: begin
-                hlt = 1;
+                hlt = 0;
                 alusrcA = 2'bxx;
                 alusrcB = 2'bxx;
                 memwrite = 0;
@@ -107,8 +107,7 @@ module maindec(input logic[6:0] op,
                 jump = 0;
                 jumpsrc = 0;
                 alusrc_a_zero = 0;
-                $display("UNHANDLED INST");
-                $finish;
+                $display("Warning: INST w/ opcode %d", op);
             end
         endcase
     endmodule

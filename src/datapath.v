@@ -25,8 +25,8 @@ module datapath (input clk, reset, hltD,
 
     // FETCH
     logic [31:0] pcD, pcnextF, pcplus4F, pcbranchE, pcnextbrF;
-    rPipe #(32) pcreg(.clk(clk), .en(!stallF), .clr(reset),
-                      .inpData(pcnextF), .outData(pcF));
+    pcReg pcreg(.clk(clk), .en(!stallF), .clr(reset),
+                .pcIn(pcnextF), .pcOut(pcF));
     adder pcadd1(.a(pcF), .b(32'd4), .y(pcplus4F));
 
     logic pcsrcE;
@@ -128,9 +128,11 @@ module datapath (input clk, reset, hltD,
     mux2 #(32) resmux(.d0(aluoutW), .d1(readdataW),
                       .s(memtoregW), .y(resultW));
 
-    always @(posedge clk)
-        if (hltW)
+    always @(negedge clk)
+        if (hltW) begin
+            $display("Caught halt signal at WB stage. Exiting...");
             $finish;
+        end
 
     // HAZARD UNIT
 

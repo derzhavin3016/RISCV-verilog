@@ -13,6 +13,10 @@
 #include "Vtop.h"
 #include "Vtop_imem.h"
 #include "Vtop_top.h"
+#include "Vtop_riscv.h"
+#include "Vtop_datapath.h"
+#include "Vtop_pcReg.h"
+
 
 using Addr = std::uint32_t;
 using Word = std::uint32_t;
@@ -107,7 +111,7 @@ int parseCmd(int argc, char *argv[], std::filesystem::path &elf_path,
 void loadElfToMem(const std::filesystem::path &elf_path, Vtop *top)
 {
   ELFLoader loader{elf_path};
-  top->top->pcF = loader.getEntryPoint();
+  top->top->riscv->dpath->pcreg->pc = loader.getEntryPoint();
 
   for (auto segmentIdx : loader.getLoadableSegments())
   {
@@ -163,7 +167,7 @@ try
   loadElfToMem(elf_path, top.get());
 
   int clock = 0;
-  for (vluint64_t vtime = 0; !Verilated::gotFinish() && vtime <= end_time;
+  for (vluint64_t vtime = 1; !Verilated::gotFinish() && vtime <= end_time;
        ++vtime)
   {
     if (vtime % 8 == 0)
