@@ -104,7 +104,7 @@ module datapath (input clk, reset, hltD,
     adder jmptar(.a(jmp_baseE), .b(immE), .y(jmp_pcE));
     assign jmp_fin_pcE = jmp_pcE & ~1;
     logic [31:0] writedataE;
-    assign writedataE = rd2E;
+    assign writedataE = rd2Efrw;
 
     logic regwriteM, memtoregM, hltM;
     logic [4:0] rdM;
@@ -118,19 +118,21 @@ module datapath (input clk, reset, hltD,
 
     // MEMORY
     logic memtoregW, memwriteW, validW;
-    logic [31:0] aluoutW, readdataW, writedataW;
+    logic [31:0] aluoutW, readdataW, writedataW, pcW;
 
-    rPipe #(106) MtoW(.clk(clk), .en(1), .clr(reset),
+    rPipe #(138) MtoW(.clk(clk), .en(1), .clr(reset),
                       .inpData({regwriteM, memtoregM, hltM, rdM,
-                                aluoutM, readdataM, memwriteM, writedataM, pcM != 0}),
+                                aluoutM, readdataM, memwriteM,
+                                writedataM, pcM != 0, pcM}),
                       .outData({regwriteW, memtoregW, hltW, rdW,
-                                aluoutW, readdataW, memwriteW, writedataW, validW}));
+                                aluoutW, readdataW, memwriteW,
+                                writedataW, validW, pcW}));
 
     // WRITEBACK
 
     mux2 #(32) resmux(.d0(aluoutW), .d1(readdataW),
                       .s(memtoregW), .y(resultW));
-    reg [31:0] num;
+    reg [31:0] num = 1;
 
     // Cosimulation
     always @(negedge clk) begin
@@ -144,9 +146,9 @@ module datapath (input clk, reset, hltD,
             else if (memwriteW)
                 $display("M[0x%h]=0x%h", aluoutW, writedataW);
 
-            $display("PC=0x%h", pcM);
-            $display("-----------------------");
+            $display("PC=0x%h", (pcM == 0) ? pcW + 4 : pcM);
             if (hltW) begin
+                $display("");
                 $display("Caught halt signal at WB stage. Exiting...");
                 $finish;
             end
