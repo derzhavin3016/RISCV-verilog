@@ -136,12 +136,12 @@ module datapath (input clk, reset, hltD,
 
     mux2 #(32) resmux(.d0(aluoutW), .d1(readdataW),
                       .s(memtoregW), .y(resultW));
-    reg [31:0] num = 1;
+    reg [31:0] num = 0;
 
     // Cosimulation
     always @(negedge clk) begin
+        num <= num + 1;
         if (validW) begin
-            num <= num + 1;
             $display("-----------------------");
             $display("NUM=%0d", num);
 
