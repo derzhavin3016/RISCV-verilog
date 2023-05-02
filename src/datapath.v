@@ -137,14 +137,14 @@ module datapath (input clk, reset, hltD,
         if (validW) begin
             num <= num + 1;
             $display("-----------------------");
-            $display("NUM=%d", num);
+            $display("NUM=%0d", num);
 
             if (regwriteW & (rdW != 0))
-                $display("x%d=0x%0h", rdW, resultW);
+                $display("x%0d=0x%h", rdW, resultW);
             else if (memwriteW)
-                $display("M[0x%0h]=0x%0h", aluoutW, writedataW);
+                $display("M[0x%h]=0x%h", aluoutW, writedataW);
 
-            $display("PC=0x%0h", pcM);
+            $display("PC=0x%h", pcM);
             $display("-----------------------");
             if (hltW) begin
                 $display("Caught halt signal at WB stage. Exiting...");
