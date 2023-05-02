@@ -108,31 +108,50 @@ module datapath (input clk, reset, hltD,
 
     logic regwriteM, memtoregM, hltM;
     logic [4:0] rdM;
+    logic [31:0] pcM;
 
-    rPipe #(76) EtoM(.clk(clk), .en(1), .clr(reset),
-                     .inpData({regwriteE, memtoregE, memwriteE,
-                               hltE, memsizeE, rdE, writedataE, aluoutE}),
-                     .outData({regwriteM, memtoregM, memwriteM,
-                               hltM, memsizeM, rdM, writedataM, aluoutM}));
+    rPipe #(108) EtoM(.clk(clk), .en(1), .clr(reset),
+                      .inpData({regwriteE, memtoregE, memwriteE,
+                                hltE, memsizeE, rdE, writedataE, aluoutE, pcE}),
+                      .outData({regwriteM, memtoregM, memwriteM,
+                                hltM, memsizeM, rdM, writedataM, aluoutM, pcM}));
 
     // MEMORY
-    logic memtoregW;
-    logic [31:0] aluoutW, readdataW;
+    logic memtoregW, memwriteW, validW;
+    logic [31:0] aluoutW, readdataW, writedataW;
 
-    rPipe #(72) MtoW(.clk(clk), .en(1), .clr(reset),
-                     .inpData({regwriteM, memtoregM, hltM, rdM, aluoutM, readdataM}),
-                     .outData({regwriteW, memtoregW, hltW, rdW, aluoutW, readdataW}));
+    rPipe #(106) MtoW(.clk(clk), .en(1), .clr(reset),
+                      .inpData({regwriteM, memtoregM, hltM, rdM,
+                                aluoutM, readdataM, memwriteM, writedataM, pcM != 0}),
+                      .outData({regwriteW, memtoregW, hltW, rdW,
+                                aluoutW, readdataW, memwriteW, writedataW, validW}));
 
     // WRITEBACK
 
     mux2 #(32) resmux(.d0(aluoutW), .d1(readdataW),
                       .s(memtoregW), .y(resultW));
+    reg [31:0] num;
 
-    always @(negedge clk)
-        if (hltW) begin
-            $display("Caught halt signal at WB stage. Exiting...");
-            $finish;
+    // Cosimulation
+    always @(negedge clk) begin
+        if (validW) begin
+            num <= num + 1;
+            $display("-----------------------");
+            $display("NUM=%d", num);
+
+            if (regwriteW & (rdW != 0))
+                $display("x%d=0x%0h", rdW, resultW);
+            else if (memwriteW)
+                $display("M[0x%0h]=0x%0h", aluoutW, writedataW);
+
+            $display("PC=0x%0h", pcM);
+            $display("-----------------------");
+            if (hltW) begin
+                $display("Caught halt signal at WB stage. Exiting...");
+                $finish;
+            end
         end
+    end
 
     // HAZARD UNIT
 
