@@ -111,6 +111,7 @@ int parseCmd(int argc, char *argv[], std::filesystem::path &elf_path,
 void loadElfToMem(const std::filesystem::path &elf_path, Vtop *top)
 {
   ELFLoader loader{elf_path};
+
   top->top->riscv->dpath->pcreg->pc = loader.getEntryPoint();
 
   for (auto segmentIdx : loader.getLoadableSegments())
@@ -139,8 +140,8 @@ public:
     top->trace(vcd.get(), levels);
     vcd->open(trace_file.c_str());
   }
-  template <Number NumT>
-  void dump(NumT val)
+
+  void dump(Number auto val)
   {
     vcd->dump(val);
   }
