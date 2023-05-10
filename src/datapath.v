@@ -1,4 +1,18 @@
+`include "opcodes.v"
 `include "consts.v"
+
+typedef enum bit[6:0] {
+            OPC_R_TYPE = `OPC_R_TYPE,
+            OPC_I_TYPE = `OPC_I_TYPE,
+            OPC_BRANCH = `OPC_BRANCH,
+            OPC_JAL = `OPC_JAL,
+            OPC_JALR = `OPC_JALR,
+            OPC_LOAD = `OPC_LOAD,
+            OPC_STORE = `OPC_STORE,
+            OPC_LUI = `OPC_LUI,
+            OPC_AUIPC = `OPC_AUIPC,
+            OPC_SYSTEM = `OPC_SYSTEM
+        } Opcodes;
 
 module datapath (input clk, reset, hltD,
                      input memtoregD, jumpsrcD,
@@ -49,6 +63,7 @@ module datapath (input clk, reset, hltD,
     logic [3:0] alucontrolE;
     logic [4:0] ra1E, ra2E, rdE;
     logic [31:0] pcE, rd1E, rd2E, immE;
+    logic [6:0] opcD = instrD[6:0], opcE;
 
     immSel immsel(.instr(instrD), .imm(immD));
 
@@ -62,15 +77,15 @@ module datapath (input clk, reset, hltD,
                .we3(regwriteW), .wa3(rdW),
                .wd3(resultW),
                .rd1(rd1D), .rd2(rd2D));
-    rPipe #(162) DtoE(.clk(clk), .en(1), .clr(flushE),
+    rPipe #(169) DtoE(.clk(clk), .en(1), .clr(flushE),
                       .inpData({hltD, memtoregD, jumpsrcD, alusrcAD, alusrcBD,
                                 regwriteD, jumpD, alucontrolD, pcD, memwriteD,
                                 memsizeD, branchD, inv_brD, rd1D, rd2D, ra1D, ra2D, rdD,
-                                immD}),
+                                immD, opcD}),
                       .outData({hltE, memtoregE, jumpsrcE, alusrcAE, alusrcBE,
                                 regwriteE, jumpE, alucontrolE, pcE, memwriteE,
                                 memsizeE, branchE, inv_brE, rd1E, rd2E, ra1E, ra2E, rdE,
-                                immE}));
+                                immE, opcE}));
 
     // EXECUTE
     logic [31:0] srcAE, srcBE, aluoutE, rd1Efrw, rd2Efrw;
@@ -108,35 +123,38 @@ module datapath (input clk, reset, hltD,
 
     logic regwriteM, memtoregM, hltM, controlChangeM;
     logic [4:0] rdM;
+    logic [6:0] opcM;
     logic [31:0] pcM;
 
-    rPipe #(109) EtoM(.clk(clk), .en(1), .clr(reset),
+    rPipe #(116) EtoM(.clk(clk), .en(1), .clr(reset),
                       .inpData({regwriteE, memtoregE, memwriteE,
                                 hltE, memsizeE, rdE, writedataE, aluoutE,
-                                pcE, controlChange}),
+                                pcE, controlChange, opcE}),
                       .outData({regwriteM, memtoregM, memwriteM,
                                 hltM, memsizeM, rdM, writedataM, aluoutM,
-                                pcM, controlChangeM}));
+                                pcM, controlChangeM, opcM}));
 
     // MEMORY
     logic memtoregW, memwriteW, validW, controlChangeW;
     logic [31:0] aluoutW, readdataW, writedataW, pcW;
+    logic [6:0] opcW;
 
-    rPipe #(139) MtoW(.clk(clk), .en(1), .clr(reset),
+    rPipe #(146) MtoW(.clk(clk), .en(1), .clr(reset),
                       .inpData({regwriteM, memtoregM, hltM, rdM,
                                 aluoutM, readdataM, memwriteM,
                                 writedataM, pcM != 0, pcM,
-                                controlChangeM}),
+                                controlChangeM, opcM}),
                       .outData({regwriteW, memtoregW, hltW, rdW,
                                 aluoutW, readdataW, memwriteW,
                                 writedataW, validW, pcW,
-                                controlChangeW}));
+                                controlChangeW, opcW}));
 
     // WRITEBACK
 
     mux2 #(32) resmux(.d0(aluoutW), .d1(readdataW),
                       .s(memtoregW), .y(resultW));
     reg [31:0] num = 0;
+    Opcodes opcode = Opcodes'(opcW);
 
     // Cosimulation
     always @(negedge clk) begin
@@ -144,6 +162,7 @@ module datapath (input clk, reset, hltD,
         if (validW) begin
             $display("-----------------------");
             $display("NUM=%0d", num);
+            $display("OPC=%s", opcode.name());
 
             if (regwriteW & (rdW != 0))
                 $display("x%0d=0x%h", rdW, resultW);
