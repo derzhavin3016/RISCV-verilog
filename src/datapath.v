@@ -62,8 +62,7 @@ module datapath (input clk, reset, hltD,
     logic [2:0] memsizeE;
     logic [3:0] alucontrolE;
     logic [4:0] ra1E, ra2E, rdE;
-    logic [31:0] pcE, rd1E, rd2E, immE;
-    logic [6:0] opcD = instrD[6:0], opcE;
+    logic [31:0] pcE, rd1E, rd2E, immE, instrE;
 
     immSel immsel(.instr(instrD), .imm(immD));
 
@@ -77,15 +76,15 @@ module datapath (input clk, reset, hltD,
                .we3(regwriteW), .wa3(rdW),
                .wd3(resultW),
                .rd1(rd1D), .rd2(rd2D));
-    rPipe #(169) DtoE(.clk(clk), .en(1), .clr(flushE),
+    rPipe #(194) DtoE(.clk(clk), .en(1), .clr(flushE),
                       .inpData({hltD, memtoregD, jumpsrcD, alusrcAD, alusrcBD,
                                 regwriteD, jumpD, alucontrolD, pcD, memwriteD,
                                 memsizeD, branchD, inv_brD, rd1D, rd2D, ra1D, ra2D, rdD,
-                                immD, opcD}),
+                                immD, instrD}),
                       .outData({hltE, memtoregE, jumpsrcE, alusrcAE, alusrcBE,
                                 regwriteE, jumpE, alucontrolE, pcE, memwriteE,
                                 memsizeE, branchE, inv_brE, rd1E, rd2E, ra1E, ra2E, rdE,
-                                immE, opcE}));
+                                immE, instrE}));
 
     // EXECUTE
     logic [31:0] srcAE, srcBE, aluoutE, rd1Efrw, rd2Efrw;
@@ -123,38 +122,36 @@ module datapath (input clk, reset, hltD,
 
     logic regwriteM, memtoregM, hltM, controlChangeM;
     logic [4:0] rdM;
-    logic [6:0] opcM;
-    logic [31:0] pcM;
+    logic [31:0] pcM, instrM;
 
-    rPipe #(116) EtoM(.clk(clk), .en(1), .clr(reset),
+    rPipe #(141) EtoM(.clk(clk), .en(1), .clr(reset),
                       .inpData({regwriteE, memtoregE, memwriteE,
                                 hltE, memsizeE, rdE, writedataE, aluoutE,
-                                pcE, controlChange, opcE}),
+                                pcE, controlChange, instrE}),
                       .outData({regwriteM, memtoregM, memwriteM,
                                 hltM, memsizeM, rdM, writedataM, aluoutM,
-                                pcM, controlChangeM, opcM}));
+                                pcM, controlChangeM, instrM}));
 
     // MEMORY
     logic memtoregW, memwriteW, validW, controlChangeW;
-    logic [31:0] aluoutW, readdataW, writedataW, pcW;
-    logic [6:0] opcW;
+    logic [31:0] aluoutW, readdataW, writedataW, pcW, instrW;
 
-    rPipe #(146) MtoW(.clk(clk), .en(1), .clr(reset),
+    rPipe #(171) MtoW(.clk(clk), .en(1), .clr(reset),
                       .inpData({regwriteM, memtoregM, hltM, rdM,
                                 aluoutM, readdataM, memwriteM,
                                 writedataM, pcM != 0, pcM,
-                                controlChangeM, opcM}),
+                                controlChangeM, instrM}),
                       .outData({regwriteW, memtoregW, hltW, rdW,
                                 aluoutW, readdataW, memwriteW,
                                 writedataW, validW, pcW,
-                                controlChangeW, opcW}));
+                                controlChangeW, instrW}));
 
     // WRITEBACK
 
     mux2 #(32) resmux(.d0(aluoutW), .d1(readdataW),
                       .s(memtoregW), .y(resultW));
     reg [31:0] num = 0;
-    Opcodes opcode = Opcodes'(opcW);
+    Opcodes opcode = Opcodes'(instrW[6:0]);
 
     // Cosimulation
     always @(negedge clk) begin
@@ -163,6 +160,7 @@ module datapath (input clk, reset, hltD,
             $display("-----------------------");
             $display("NUM=%0d", num);
             $display("OPC=%s", opcode.name());
+            $display("INST=0x%h", instrW);
 
             if (regwriteW & (rdW != 0))
                 $display("x%0d=0x%h", rdW, resultW);
